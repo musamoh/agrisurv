@@ -1,0 +1,74 @@
+name: "Development"
+
+on:
+  push:
+    branches:
+      - develop
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Use Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'yarn'
+
+      - name: Install Node modules
+        run: yarn ci
+  
+      - name: Linting
+        run: yarn lint
+  
+      - name: Testing
+        run: yarn test:ci
+
+      - name: Coverage
+        uses: ArtiomTr/jest-coverage-report-action@v1
+        with:
+          coverage-file: ./jest-report.json
+          base-coverage-file: ./jest-report.json
+
+      - name: "Automated Version Bump"
+        uses: "paramsinghvc/gh-action-bump-version@master"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag-prefix: "v"
+          tag-suffix: "dev"
+
+      - name: "Sync React Native version with package.json version"
+        run: npx react-native-version
+
+      - name: "Commit version sync changes"
+        uses: EndBug/add-and-commit@v9
+        with:
+          message: "chore: react native - android & ios versions updated"
+
+      - name: "Automated Release"
+        uses: "marvinpinto/action-automatic-releases@latest"
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          automatic_release_tag: "latest"
+          title: Build
+
+  build-and-release-android:
+    needs: build
+    uses: ./.github/workflows/build-android.yml
+    with:
+      environment: release
+      publish: true
+    secrets: inherit
+
+  build-and-release-ios:
+    needs: build
+    uses: ./.github/workflows/build-ios.yml
+    with:
+      environment: release
+      publish: true
+    secrets: inherit
+

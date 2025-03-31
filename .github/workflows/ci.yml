@@ -1,0 +1,50 @@
+name: CI
+
+on:
+  pull_request:
+    branches:
+      - main
+      - develop
+
+jobs:
+  install-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Use Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'yarn'
+
+      - name: Install Node modules
+        run: yarn ci
+
+      - name: Linting
+        run: yarn lint
+
+      - name: Testing
+        run: yarn test:ci
+
+      - name: Jest coverage Report
+        uses: ArtiomTr/jest-coverage-report-action@v1
+        with:
+          coverage-file: ./jest-report.json
+          base-coverage-file: ./jest-report.json
+
+  build-android:
+    needs: install-and-test
+    uses: ./.github/workflows/build-android.yml
+    with:
+      environment: release
+    secrets: inherit
+
+  build-ios:
+    needs: install-and-test
+    uses: ./.github/workflows/build-ios.yml
+    with:
+      environment: release
+      publish: true
+    secrets: inherit
