@@ -3,7 +3,7 @@ name: CI
 on:
   pull_request:
     branches:
-      - master
+      - main
       - develop
 
 jobs:
@@ -36,9 +36,10 @@ jobs:
 
   build-android:
     needs: install-and-test
-    uses: ./.github/workflows/build-android.yml
+    uses: ./.github/workflows/build-andriod.yml
     with:
       environment: release
+      publish: true
     secrets: inherit
 
   build-ios:
